@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ ipo_name }} IPO Details</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-4">
+    <h2 class="mb-3">{{ ipo_name }} IPO Overview</h2>
+
+    <div class="row">
+        <div class="col-md-8">
+            {% if ipo_details %}
+            <div class="card mb-4 shadow">
+                <div class="card-body">
+                    <h5 class="card-title">IPO Details</h5>
+                    <table class="table table-bordered">
+                        {% for key, value in ipo_details.items() %}
+                        <tr>
+                            <th>{{ key }}</th>
+                            <td>{{ value }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <h4>Sentiment Scores</h4>
+            <ul class="list-group mb-4">
+                <li class="list-group-item">Positive: {{ sentiment['positive'] }}</li>
+                <li class="list-group-item">Neutral: {{ sentiment['neutral'] }}</li>
+                <li class="list-group-item">Negative: {{ sentiment['negative'] }}</li>
+                <li class="list-group-item">Compound: {{ sentiment['compound'] }}</li>
+            </ul>
+
+            <h4>Related Articles</h4>
+            <ul class="list-group mb-4">
+                {% for article in articles %}
+                <li class="list-group-item">{{ article }}</li>
+                {% endfor %}
+            </ul>
+
+            <h4 class="mt-4">Ask something about this IPO</h4>
+            <form method="POST" action="{{ url_for('ipo_detail', ipo_name=ipo_name|urlencode) }}">
+                <div class="input-group mb-3">
+                    <input type="text" name="query" class="form-control" placeholder="E.g. What is the CMP?" required>
+                    <button class="btn btn-primary" type="submit">Ask</button>
+                </div>
+            </form>
+
+            {% if chatbot_answer %}
+            <div class="alert {{ 'alert-info' if 'Sorry' not in chatbot_answer else 'alert-warning' }} shadow-sm">
+                <strong>Answer:</strong> {{ chatbot_answer }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <h4>Word Cloud</h4>
+            <img src="{{ url_for('static', filename='wordclouds/' + wordcloud_filename) }}"
+                 class="img-fluid my-3 border shadow rounded">
+        </div>
+    </div>
+
+    <a href="/" class="btn btn-secondary mt-4">← Back to IPO List</a>
+</div>
+</body>
+</html>
