@@ -10,3 +10,4 @@ __pycache__/
 static/wordcloud.png
 .DS_Store
 *.log
+data/training_data_26000.csv
