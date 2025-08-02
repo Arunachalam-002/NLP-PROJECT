@@ -19,18 +19,37 @@ def index():
     ipo_names = extract_ipo_names(articles)
     return render_template("index.html", ipo_names=ipo_names)
 
-@app.route('/ipo/<path:ipo_name>', methods=['GET', 'POST'])
+@app.route('/ipo/<path:ipo_name>')
 def ipo_detail(ipo_name):
     ipo_name = unquote(ipo_name)
     articles, ipo_details_dict = get_ipo_data()
-    filtered = filter_articles_by_ipo(articles, ipo_name)
-    sentiment = analyze_sentiment(filtered)
+    filtered_articles = filter_articles_by_ipo(articles, ipo_name)
+    sentiment = analyze_sentiment(filtered_articles)
 
     os.makedirs(app.config['WORDCLOUD_FOLDER'], exist_ok=True)
     wc_filename = f"{ipo_name.replace(' ', '_')}.png"
     wc_path = os.path.join(app.config['WORDCLOUD_FOLDER'], wc_filename)
-    generate_wordcloud(filtered, save_path=wc_path)
+    generate_wordcloud(filtered_articles, save_path=wc_path)
 
+    ipo_details = ipo_details_dict.get(ipo_name, {})
+
+    return render_template("ipo_detail.html",
+                           ipo_name=ipo_name,
+                           ipo_details=ipo_details,
+                           wordcloud_filename=wc_filename,
+                           sentiment=sentiment)
+
+@app.route('/ipo/<path:ipo_name>/articles')
+def ipo_articles(ipo_name):
+    ipo_name = unquote(ipo_name)
+    articles, _ = get_ipo_data()
+    filtered_articles = filter_articles_by_ipo(articles, ipo_name)
+    return render_template("ipo_articles.html", ipo_name=ipo_name, articles=filtered_articles)
+
+@app.route('/ipo/<path:ipo_name>/chat', methods=['GET', 'POST'])
+def ipo_chatbot(ipo_name):
+    ipo_name = unquote(ipo_name)
+    _, ipo_details_dict = get_ipo_data()
     ipo_details = ipo_details_dict.get(ipo_name, {})
     chatbot_answer = ""
 
@@ -64,13 +83,7 @@ def ipo_detail(ipo_name):
         if not matched:
             chatbot_answer = "❌ Sorry, I couldn't find an answer. Try asking about open date, CMP, listing gains, issue price, etc."
 
-    return render_template("ipo_detail.html",
-                           ipo_name=ipo_name,
-                           articles=filtered,
-                           sentiment=sentiment,
-                           ipo_details=ipo_details,
-                           chatbot_answer=chatbot_answer,
-                           wordcloud_filename=wc_filename)
+    return render_template("ipo_chatbot.html", ipo_name=ipo_name, chatbot_answer=chatbot_answer)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)

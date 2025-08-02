@@ -1,41 +1,55 @@
 import pandas as pd
 import os
 
-DATA_PATH = os.path.join("data", "ipo.csv")
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+IPO_CSV_PATH = os.path.join(BASE_DIR, "data", "ipo.csv")
+NEWS_CSV_PATH = os.path.join(BASE_DIR, "data", "training_data_26000.csv")
 
 def get_ipo_data():
-    df = pd.read_csv(DATA_PATH)
-    df.columns = df.iloc[0]
-    df = df[1:]
-    df.reset_index(drop=True, inplace=True)
+    ipo_df = pd.read_csv(IPO_CSV_PATH)
+    ipo_df.columns = [col.strip() for col in ipo_df.columns]
 
-    articles = [
-        f"{row['IPO Name']} IPO opened on {row['Date']} with issue size ₹{row['Issue Size  (in crores)']} Cr and listed at ₹{row['Listing Open']}"
-        for _, row in df.iterrows()
-    ]
+    news_df = pd.read_csv(NEWS_CSV_PATH)
+    news_df = news_df[news_df['Content'].str.contains("IPO", case=False, na=False)]
 
-    ipo_details = {}
-    for _, row in df.iterrows():
-        ipo_name = str(row["IPO Name"]).strip()
-        ipo_details[ipo_name] = {
-            "Date": row["Date"],
-            "Issue Size (Cr)": row["Issue Size  (in crores)"],
-            "QIB": row["QIB"],
-            "HNI": row["HNI"],
-            "Retail": row["RII"],
-            "Total Subscription": row["Total"],
-            "Issue Price": row["Issue"],
-            "Listing Open": row["Listing Open"],
-            "Listing Close": row["Listing Close"],
-            "Listing Gain (%)": row["Listing Gains(%)"],
-            "CMP": row["CMP"],
-            "Current Gain (%)": row["Current  Gains (%)"]
+    articles = []
+    ipo_details_dict = {}
+
+    for _, row in ipo_df.iterrows():
+        ipo_name = str(row["IPO_Name"]).strip()
+        ipo_name_lower = ipo_name.lower()
+
+        ipo_details_dict[ipo_name] = {
+            "Date": row.get("Date", "N/A"),
+            "Issue Size (Cr)": row.get("Issue_Size(crores)", "N/A"),
+            "QIB": row.get("QIB", "N/A"),
+            "HNI": row.get("HNI", "N/A"),
+            "Retail": row.get("RII", "N/A"),
+            "Total Subscription": "N/A",
+            "Issue Price": row.get("Issue_price", "N/A"),
+            "Listing Open": row.get("Listing_Open", "N/A"),
+            "Listing Close": row.get("Listing_Close", "N/A"),
+            "Listing Gain (%)": row.get("Listing_Gains(%)", "N/A"),
+            "CMP": row.get("CMP", "N/A"),
+            "Current Gain (%)": row.get("Current_gains", "N/A")
         }
 
-    return articles, ipo_details
+        matching_articles = news_df[news_df['Content'].str.lower().str.contains(ipo_name_lower)]
+        for _, art in matching_articles.iterrows():
+            articles.append({
+                'IPO': ipo_name,  # ✅ Use 'IPO' key for compatibility
+                'URL': art.get('URL', ''),
+                'Content': art.get('Content', ''),
+                'Summary': art.get('Summary', ''),
+                'Sentiment': art.get('Sentiment', 'neutral').lower()
+            })
+
+    return articles, ipo_details_dict
+
 
 def extract_ipo_names(articles):
-    return sorted([line.split(" IPO")[0] for line in articles])
+    return sorted(set(article["IPO"] for article in articles if "IPO" in article))
+
 
 def filter_articles_by_ipo(articles, ipo_name):
-    return [a for a in articles if ipo_name.lower() in a.lower()]
+    return [a for a in articles if a.get('IPO', '').lower() == ipo_name.lower()]

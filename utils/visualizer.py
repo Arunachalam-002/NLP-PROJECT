@@ -1,11 +1,12 @@
 from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 
-def generate_wordcloud(texts, save_path):
-    wc = WordCloud(width=800, height=400, background_color="white").generate(" ".join(texts))
-    plt.figure(figsize=(10, 5))
-    plt.imshow(wc, interpolation='bilinear')
-    plt.axis('off')
-    plt.tight_layout()
-    plt.savefig(save_path)
-    plt.close()
+def generate_wordcloud(articles, save_path):
+    # Extract summaries from article dicts
+    texts = [article.get('Summary', '') for article in articles if 'Summary' in article]
+
+    # Join all summaries into one string
+    combined_text = " ".join(texts)
+
+    # Generate and save the word cloud
+    wc = WordCloud(width=800, height=400, background_color="white").generate(combined_text)
+    wc.to_file(save_path)
